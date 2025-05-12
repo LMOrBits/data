@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10,<=3.13"
-dependencies = ["loguru>=0.7.3"]
+dependencies = [
+    "loguru>=0.7.3",
+    "python-dotenv>=1.0.1",
+]
 
 [project.optional-dependencies]
 simple = ["lakefs-spec>=0.10.0", "lakefs>=0.8.0"]
@@ -16,7 +19,7 @@ all = [
     "dask[complete]>=2024.8.0",
     "zenml==0.71.0",
 ]
-dev = ["ipykernel>=6.29.5"]
+simple-dev = ["ipykernel>=6.29.5", "data[simple]"]
 nlp = ["nltk>=3.9.1"]
 
 

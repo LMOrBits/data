@@ -88,12 +88,16 @@ class BranchManager:
         """Create or get an existing branch in a repository"""
         self.current_branch = branch_name
         try:
-            branch = repo.branch(branch_name)
-            print(f"Found existing branch {branch_name}")
+            if branch_name in list(repo.branches()):
+                print(f"Branch {branch_name} already exists")
+                return repo.branch(branch_name)
+            else:
+                print(f"Branch {branch_name} does not exist, creating it now")
+                branch = repo.branch(branch_name).create(source_branch)
             return branch
-        except Exception:
-            print(f"Creating new branch {branch_name} from {source_branch}")
-            return repo.create_branch(branch_name, source_branch)
+        except Exception as e:
+            print(f"while creating branch {branch_name} from {source_branch} we got an error {e}") 
+            
 
     def list_all(self, repo: Repository) -> List[str]:
         """List all branches in a repository"""
@@ -169,10 +173,11 @@ class LakeFSClient:
     @classmethod
     def client_factory(cls, credentials: LakeFSCredentials,
                        repo_name: str,
-                       branch_name: str = "main"):
+                       branch_name: str = "main",
+                       source_branch: str = "main") -> 'LakeFSClient':
         storage_config = StorageConfig(namespace=credentials.namespace)
         lakefs_client = cls(repo_name, storage_config, credentials)
-        lakefs_client.get_or_create_branch(branch_name)
+        lakefs_client.get_or_create_branch(branch_name=branch_name , source_branch=source_branch)
         return lakefs_client
 
 
@@ -188,10 +193,11 @@ class LakeFsDataset:
                  dataset_type: DatasetType, 
                  directory: str, 
                  project_name: str, 
-                 branch_name: str = "main") :
+                 branch_name: str = "main",
+                 source_branch: str = "main"):
         self.credentials = credentials
-        self.dataset = LakeFsDatasetModel(dataset_type=dataset_type, directory=directory, project_name=project_name)
-        self.lakefs_client = LakeFSClient.client_factory(credentials, repo_name= project_name, branch_name= branch_name)
+        self.dataset = LakeFsDatasetModel(dataset_type=dataset_type, directory=directory)
+        self.lakefs_client = LakeFSClient.client_factory(credentials, repo_name= project_name, branch_name= branch_name , source_branch=source_branch)
     
     @property
     def branch(self):
@@ -201,7 +207,7 @@ class LakeFsDataset:
         self.lakefs_client.branch_manager.current_branch = branch_name
     @property
     def repo(self):
-        return self.lakefs_client.repo_manager.repo
+        return self.lakefs_client.repo_manager.repo_name
     @repo.setter
     def repo(self, repo_name: str):
         self.lakefs_client.repo_manager.repo_name = repo_name
@@ -230,3 +236,40 @@ class LakeFsDataset:
         folders : list[str] = self.ls_folders(path=main_dir)
         data_files : dict[str,str] = {folder:self.ls(path=f"/{folder}{format_path}") for folder in folders}
         return data_files 
+    
+
+class LakeFsEmbeding:
+    def __init__(self,
+                 credentials: LakeFSCredentials,
+                 project_name: str, 
+                 branch_name: str = "main",
+                 source_branch: str = "main",
+                 prefix: str = "vectordb"):
+        self.credentials = credentials
+        self.lakefs_client = LakeFSClient.client_factory(credentials, repo_name= project_name, branch_name= branch_name , source_branch=source_branch)
+        self._prefix = prefix
+    
+    @property
+    def branch(self):
+        return self.lakefs_client.branch_manager.current_branch
+    @branch.setter
+    def branch(self, branch_name: str):
+        self.lakefs_client.branch_manager.current_branch = branch_name
+    @property
+    def repo(self):
+        return self.lakefs_client.repo_manager.repo_name
+    @repo.setter
+    def repo(self, repo_name: str):
+        self.lakefs_client.repo_manager.repo_name = repo_name
+    @property
+    def prefix(self):
+        return self._prefix
+
+    def get_path(self):
+        return f"{self.lakefs_client.path}/{self.prefix}"
+    
+    @property
+    def full_path(self):
+        return f"{self.lakefs_client.path}"
+    
+    
