@@ -1,6 +1,7 @@
 
 from pathlib import Path
 from data.utils.lakefs import LakeFsEmbeding
+from typing import Optional
 
 def dfs_list_files_and_folders(directory_path):
     directory = Path(directory_path)
@@ -32,9 +33,10 @@ def ingest_data(lakefs_dataset: LakeFsEmbeding ,data_path:Path , commit_message:
         dirs= {relative_path:relative_path.relative_to(data_path/"vectordb") for relative_path in dfs_list_files_and_folders(data_path/"vectordb")}
         for absolute_paths, relative_path in dirs.items():
             lakefs_client.fs.put_file(str(absolute_paths) ,f"{lakefs_dataset.repo}/{tx.branch.id}/{lakefs_dataset.prefix}/{relative_path}")
-        tx.commit(message="Add training data")
+        commit = tx.commit(message="Add training data")
+    return commit 
 
-def get_vectordb_data(lakefs_dataset: LakeFsEmbeding, data_path:Path , force:bool = False):
+def get_vectordb_data(lakefs_dataset: LakeFsEmbeding, data_path:Path , force:bool = False , commit_hash:Optional[str] = None):
     """
     Get data from lakefs
     """
@@ -52,6 +54,6 @@ def get_vectordb_data(lakefs_dataset: LakeFsEmbeding, data_path:Path , force:boo
                 shutil.rmtree(item)
             else:
                 item.unlink()
-    
-    lakefs_client.fs.get(lakefs_dataset.get_path(),str(data_path),recursive=True)
+    address = lakefs_dataset.get_path(id=commit_hash) if commit_hash else lakefs_dataset.get_path()
+    lakefs_client.fs.get(address,str(data_path),recursive=True)
     

@@ -120,6 +120,7 @@ class RepositoryManager:
         self.storage_config = storage_config
         self.branch_manager = branch_manager
         self.repo_name = repo_name
+        self.repo = None
     
     def storage_path(self,branch_name: str = "main"):
         return self.storage_config.build_path(self.repo_name,branch_name)
@@ -129,6 +130,7 @@ class RepositoryManager:
         try:
             repo = lakefs.repository(self.repo_name)
             print(f"Found existing repo {repo.id} using storage namespace {repo.properties.storage_namespace}")
+            self.repo = repo
             return repo
         except Exception as e:
             print(f"Repository {self.repo_name} does not exist, creating it now.")
@@ -140,6 +142,7 @@ class RepositoryManager:
                     exist_ok=True
                 )
                 print(f"Created new repo {repo.id} using storage namespace {repo.properties.storage_namespace}")
+                self.repo = repo
                 return repo
             except Exception as e:
                 raise Exception(f"Error creating repo {self.repo_name}. Error: {str(e)}")
@@ -156,6 +159,9 @@ class LakeFSClient:
             username=credentials.access_key_id,
             password=credentials.secret_access_key
         )
+    @property
+    def path_simple(self):
+        return f"lakefs://{self.repo_manager.repo_name}"
     @property
     def path(self):
         return f"lakefs://{self.repo_manager.repo_name}/{self.branch_manager.current_branch}"
@@ -211,6 +217,8 @@ class LakeFsDataset:
     @repo.setter
     def repo(self, repo_name: str):
         self.lakefs_client.repo_manager.repo_name = repo_name
+        
+    
 
     def get_path(self):
         return f"{self.lakefs_client.path}/{self.dataset.get_path()}"
@@ -265,7 +273,9 @@ class LakeFsEmbeding:
     def prefix(self):
         return self._prefix
 
-    def get_path(self):
+    def get_path(self,id:Optional[str] = None):
+        if id:
+            return f"{self.lakefs_client.path_simple}/{id}/{self.prefix}"
         return f"{self.lakefs_client.path}/{self.prefix}"
     
     @property
