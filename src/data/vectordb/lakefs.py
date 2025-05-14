@@ -55,7 +55,7 @@ def get_vectordb_data(lakefs_dataset: LakeFsEmbeding, data_path:Path , force:boo
         raise ValueError(f"The path {data_path} is not empty. Use force=True to overwrite.")
     if force:
         import shutil
-        for item in data_path.iterdir():
+        for item in (data_path/lakefs_dataset.prefix).iterdir():
             if item.is_dir():
                 shutil.rmtree(item)
             else:
