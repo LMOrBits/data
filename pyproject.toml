@@ -4,10 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10,<=3.13"
-dependencies = [
-    "loguru>=0.7.3",
-    "python-dotenv>=1.0.1",
-]
+dependencies = ["loguru>=0.7.3", "python-dotenv>=1.0.1"]
 
 [project.optional-dependencies]
 simple = ["lakefs-spec>=0.10.0", "lakefs>=0.8.0"]
@@ -20,7 +17,15 @@ all = [
     "zenml==0.71.0",
 ]
 simple-dev = ["ipykernel>=6.29.5", "data[simple]"]
-nlp = ["nltk>=3.9.1"]
+nlp = [
+    "nltk>=3.9.1",
+    "lakefs-spec>=0.10.0",
+    "lakefs>=0.8.0",
+    "datasets>=3.2.0",
+    "symspellpy>=6.7.8",
+    "dask[complete]>=2024.8.0",
+    "zenml==0.71.0",
+]
 
 
 [tool.hatch.build.targets.wheel]
